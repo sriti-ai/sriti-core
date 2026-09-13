@@ -194,7 +194,7 @@ Sriti's configuration is managed through two clean YAML files in `sriti/config/`
 Run unit and cascade integration tests using pytest:
 
 ```bash
-pytest
+python -m pytest
 ```
 
 All 39 unit tests run without requiring live LLM API keys or a running Redis instance (mocked in-memory).
@@ -234,6 +234,12 @@ Your pip version is too old to support `pyproject.toml`-based editable installs.
 ```bash
 pip install --upgrade pip
 pip install -e ".[dev]"
+```
+
+### `pytest` collects 0 items or fails with `ModuleNotFoundError`
+Your shell is picking up the system/Anaconda pytest instead of the one in your active environment. Use:
+```bash
+python -m pytest
 ```
 
 ### `Could not find a version that satisfies the requirement torch>=2.8.0`
