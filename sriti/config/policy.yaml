@@ -1,0 +1,145 @@
+policy:
+  cache:
+    enabled: true
+    ttl_seconds: 3600
+    # Per-task-type similarity thresholds — unchanged from the original
+    # Sriti backend (research-backed, arXiv:2510.26835, arXiv:2411.05276).
+    # These measure response variability by
+    # task shape (conversation vs. extraction vs. code), which is
+    # domain-agnostic — classifier.py's anchors are the same set.
+    task_thresholds:
+      conversation:     0.75
+      customer_support: 0.78
+      creative:         0.85
+      qa:               0.90
+      rewriting:        0.90
+      code:             0.92
+      classification:   0.92
+      translation:      0.93
+      rag_retrieval:    0.95
+      summarization:    0.96
+      instruction_following: 0.88
+      structured_extraction: 0.92
+    uncacheable_tasks:
+      - reasoning
+      - math
+      - data_analysis
+      - document_review
+      - tool_use
+      - unknown
+    agent_cacheable_step_types:
+      - planning
+      - verification
+      - summarization
+      - extraction
+
+  compression:
+    enabled: true
+    quality_threshold: 0.92
+    eligible_task_types:
+      - customer_support
+      - rag_retrieval
+      - classification
+      - summarization
+    blocked_task_types:
+      - reasoning
+      - math
+      - code
+      - structured_extraction
+      - creative
+      - tool_use
+
+  # No provider_preference_enabled/provider_preference here — that was a
+  # Bedrock-specific rollback flag from a SaaS production incident with no
+  # equivalent on a per-box deployment. Omitted, not just disabled;
+  # _resolve_tiers() defaults provider_preference_enabled to false when
+  # the key is absent.
+
+  latency_slo_enforcement: true
+
+  tiers:
+    # Cascade direction: 3 → 2 → 1 (cheapest/local first, escalate to expensive).
+    # Models sourced from config/models.yaml by default_tier.
+    - name: tier1_frontier
+      quality_threshold: null
+      max_latency_ms: 30000
+
+    - name: tier2_balanced
+      quality_threshold: 0.55
+      max_latency_ms: 15000
+
+    # max_latency_ms is set high (240s) to accommodate local vision inference
+    # on modest hardware — 15s proved too tight for a 7B vision model doing
+    # OCR-style extraction. For interactive chat workloads you may want to
+    # lower this. "tier3_fast" refers to the no-network-round-trip advantage
+    # of local inference, not wall-clock speed on CPU-only hardware.
+    - name: tier3_fast
+      quality_threshold: 0.70
+      max_latency_ms: 240000
+
+  budget:
+    # Budget cap for frontier traffic (~5-10% via frontier_traffic_cap).
+    frontier_traffic_cap: 0.08
+    max_cost_per_1k_requests: 0.50
+
+  task_routing:
+    default_tier: 2
+    tier3_tasks:
+      - customer_support
+      - rag_retrieval
+      - classification
+      - summarization
+      - structured_extraction
+      - qa
+      - translation
+      - conversation
+      - rewriting
+      - instruction_following
+    tier2_tasks:
+      - reasoning
+      - math
+      - code
+      - creative
+      - data_analysis
+      - document_review
+      - tool_use
+
+  reliability:
+    explore_rate: 0.1
+    # Lowered from the original's 20: a single-business per-box deployment
+    # generates a handful of model calls a day, not the thousands/day a
+    # multi-tenant SaaS aggregates across businesses. min_samples: 20 would
+    # mean the reliability engine effectively never leaves cold-start mode
+    # during a realistic pilot window. Revisit once real per-box call
+    # volume is observed.
+    min_samples: 5
+    # No temporal_decay section — reliability.py uses a flat EMA
+    # (reliability_store.py) rather than decay-weighted batch aggregation.
+    # Revisit if per-box outcome volume makes the EMA noisy or stale.
+    case_memory:
+      enabled: true
+      k: 4
+      weight: 0.15
+      min_reward: 0.5
+      max_cases_per_index: 100000  # documentation only — not enforced by
+                                    # LocalVectorStore at per-box scale; see
+                                    # sriti/core/local_vector_store.py.
+    aggregation:
+      enabled: true
+      max_parallel_models: 2
+      synthesis_method: best_pick
+      eligible_tiers: [2, 3]
+      min_tier_models: 2
+    expert_bank:
+      enabled: true
+      weight: 0.10
+      update_interval_s: 600  # unused in the default setup — expert_bank
+                               # runs on its heuristic seed. Wire up a
+                               # real updater if you have production data.
+      blend_ratio: 0.7
+
+  quality_check:
+    mode: low
+
+  pipeline:
+    default_plan: default_linear

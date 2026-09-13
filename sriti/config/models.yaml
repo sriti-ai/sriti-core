@@ -1,0 +1,161 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Model Catalog — Configured for three cascade tiers.
+# Provider/cost/capability fields keyed by litellm model string.
+# default_tier drives cascade tier assignment (see sriti/core/catalog/registry.py).
+#
+# default_tier: 1 (frontier), 2 (balanced/cheap cloud), 3 (local)
+# status: active | preview | stub  (only "active" models are ever routed to —
+#         see sriti/core/catalog/registry.py get_models_for_tier())
+#
+# ── Tier 2 Cloud Models ──────────────────────────────────────────────────────
+# Fast, cost-effective inference providers (e.g. Groq, Fireworks, DeepInfra).
+# Add or swap candidate models according to your preferred provider and benchmarks.
+#
+# 2026-08-28: the original placeholder here (groq/llama-3.3-70b-versatile)
+# no longer exists on Groq's API — model_not_found when actually tested
+# with a live key. Groq's currently-available catalog doesn't include any
+# Llama models at all any more; swapped to openai/gpt-oss-120b (verified
+# working with a real Groq key this session). cost_per_1m_input/output
+# below are unverified placeholders (copied forward from the old entry's
+# shape, not re-checked against Groq's current pricing page) — don't trust
+# them for a real cost comparison until checked.
+# ─────────────────────────────────────────────────────────────────────────────
+
+models:
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Tier 3 — local, Ollama + Qwen2.5
+  # Cost is $0 — inference runs on the box/edge hardware.
+  # ═══════════════════════════════════════════════════════════════════════
+
+  ollama_chat/qwen2.5:7b:
+    provider: ollama
+    display_name: "Qwen2.5 7B (local, Ollama)"
+    context_window: 32768
+    max_output_tokens: 8192
+    cost_per_1m_input: 0.0
+    cost_per_1m_output: 0.0
+    default_tier: 3
+    supports_streaming: true
+    supports_system_message: true
+    supports_tool_use: true
+    supports_parallel_tool_calls: false
+    supports_json_mode: true
+    supports_vision: false
+    supports_thinking: false
+    cache_write_cost_per_1m: null
+    cache_read_cost_per_1m: null
+    typical_latency_class: medium
+    strengths: [multilingual, fast_inference]
+    status: active
+
+  # Vision-capable local model. Cascade capability filtering
+  # (sriti/core/cascade/multimodal.py) routes any vision-requiring request
+  # only to models with supports_vision: true — keeping vision inference
+  # local and free rather than escalating to a paid tier-1 model.
+  #
+  # qwen2.5vl:7b chosen over smaller alternatives (e.g. moondream 1.8B)
+  # because smaller models proved unreliable for structured extraction on
+  # real invoice images — returning wrong amounts in 2 of 3 test runs.
+  # Accuracy matters more than speed for financial document extraction.
+  # Re-test timing on target hardware (GPU-accelerated) before assuming
+  # this model is too slow for production.
+  ollama_chat/qwen2.5vl:7b:
+    provider: ollama
+    display_name: "Qwen2.5-VL 7B (local, Ollama, vision)"
+    context_window: 32768
+    max_output_tokens: 8192
+    cost_per_1m_input: 0.0
+    cost_per_1m_output: 0.0
+    default_tier: 3
+    supports_streaming: true
+    supports_system_message: true
+    supports_tool_use: false
+    supports_parallel_tool_calls: false
+    supports_json_mode: true
+    supports_vision: true
+    supports_thinking: false
+    cache_write_cost_per_1m: null
+    cache_read_cost_per_1m: null
+    typical_latency_class: slow
+    strengths: [multilingual, fast_inference]
+    status: active
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Tier 2 — cheap cloud. PROVISIONAL, see header note above.
+  # ═══════════════════════════════════════════════════════════════════════
+
+  groq/openai/gpt-oss-120b:
+    provider: groq
+    display_name: "GPT-OSS 120B (Groq) — provisional tier-2 pick"
+    context_window: 131072
+    max_output_tokens: 32768
+    cost_per_1m_input: 0.59  # unverified placeholder, see header note
+    cost_per_1m_output: 0.79  # unverified placeholder, see header note
+    default_tier: 2
+    supports_streaming: true
+    supports_system_message: true
+    supports_tool_use: true
+    supports_parallel_tool_calls: true
+    supports_json_mode: true
+    supports_vision: false
+    supports_thinking: true
+    cache_write_cost_per_1m: null
+    cache_read_cost_per_1m: null
+    typical_latency_class: fast
+    strengths: [fast_inference, reasoning]
+    status: active
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Tier 1 — frontier, budget-capped (~5-10% via frontier_traffic_cap,
+  # reserved for validating high-stakes tasks or fallback).
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # status: preview — get_models_for_tier(1) only returns active models,
+  # so this entry is never routed to without a configured API key. Flip
+  # to active once a key is available. Tier-1 vendor is not locked in.
+  anthropic/claude-4-sonnet-20250514:
+    provider: anthropic
+    display_name: "Claude 4 Sonnet"
+    context_window: 200000
+    max_output_tokens: 64000
+    cost_per_1m_input: 3.00
+    cost_per_1m_output: 15.00
+    default_tier: 1
+    supports_streaming: true
+    supports_system_message: true
+    supports_tool_use: true
+    supports_parallel_tool_calls: true
+    supports_json_mode: true
+    supports_vision: true
+    supports_thinking: true
+    cache_write_cost_per_1m: null
+    cache_read_cost_per_1m: null
+    typical_latency_class: fast
+    strengths: [reasoning, multilingual]
+    status: preview
+
+  # Current tier-1 pick using a GOOGLE_API_KEY. gemini-3.6-flash is the
+  # recommended starting point — confirm the latest available model with
+  # your API key before deploying. Tier-1 vendor is not locked in; swap
+  # this entry and set the other tier-1 entries to active as needed.
+  gemini/gemini-3.6-flash:
+    provider: gemini
+    display_name: "Gemini 3.6 Flash — provisional tier-1 pick"
+    context_window: 1048576
+    max_output_tokens: 65536
+    cost_per_1m_input: 0.75
+    cost_per_1m_output: 3.75
+    default_tier: 1
+    supports_streaming: true
+    supports_system_message: true
+    supports_tool_use: true
+    supports_parallel_tool_calls: true
+    supports_json_mode: true
+    supports_vision: true
+    supports_thinking: true
+    cache_write_cost_per_1m: null
+    cache_read_cost_per_1m: null
+    typical_latency_class: fast
+    strengths: [reasoning, multilingual]
+    status: active

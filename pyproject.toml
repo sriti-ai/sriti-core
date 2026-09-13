@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sriti-core"
+version = "0.1.0"
+description = "Adaptive LLM cascade engine with semantic caching and reliability tracking"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Sudev Mukherjee" },
+  { name = "Purusoth Mahendran" },
+  { name = "Clint Solomon" },
+]
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "httpx>=0.27.2",
+    "pydantic>=2.0,<3.0",
+    "pydantic-settings>=2.5.2",
+    "python-dotenv>=1.0.1",
+    "litellm>=1.83.7,<1.88",
+    "redis>=5.0.8,<6",
+    "pyyaml>=6.0.2",
+    "numpy>=1.26.0,<2",
+    "fastembed>=0.3.0",
+    "llmlingua>=0.2.0",
+    "torch>=2.8.0",
+    "transformers>=4.53.0",
+    "cryptography>=42.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[project.urls]
+Homepage = "https://github.com/sriti-ai/sriti-core"
+Issues = "https://github.com/sriti-ai/sriti-core/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sriti*"]
