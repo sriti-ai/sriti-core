@@ -16,6 +16,7 @@
   <a href="#configuration">Configuration</a> •
   <a href="#api-reference">API Reference</a> •
   <a href="#testing">Testing</a> •
+  <a href="#troubleshooting">Troubleshooting</a> •
   <a href="#license">License</a>
 </p>
 
@@ -132,10 +133,10 @@ uvicorn sriti.app:app --host 0.0.0.0 --port 8100
 curl -X POST http://localhost:8100/complete \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Extract invoice items and total amount from this ledger snippet...",
+    "prompt": "Summarise the following paragraph in one sentence: ...",
     "minimum_tier": "tier_3",
     "cacheable": true,
-    "requires_json": true
+    "requires_json": false
   }'
 ```
 
@@ -150,7 +151,7 @@ from sriti.client import SritiModelClient
 async def main():
     client = SritiModelClient(base_url="http://localhost:8100")
     response = await client.complete(
-        prompt="Explain the difference between a mutual fund and an ETF in two sentences.",
+        prompt="Explain how semantic caching reduces LLM inference costs.",
         minimum_tier="tier_3",
         cacheable=True
     )
@@ -197,6 +198,62 @@ pytest
 ```
 
 All 39 unit tests run without requiring live LLM API keys or a running Redis instance (mocked in-memory).
+
+---
+
+## Troubleshooting
+
+### `uvicorn: command not found`
+The `uvicorn` binary is not on your PATH. Run it via Python instead:
+```bash
+python -m uvicorn sriti.app:app --host 0.0.0.0 --port 8100
+```
+
+### `ModuleNotFoundError: No module named 'fastapi'` (or other missing modules)
+You installed `sriti-core` but the server dependencies are not in your active environment. Install them:
+```bash
+pip install sriti-core[dev]
+# or from source:
+pip install -e ".[dev]"
+```
+
+### `Could not find a version that satisfies the requirement sriti-core (from versions: none)`
+Your Python version is below 3.11. Verify:
+```bash
+python --version
+```
+sriti-core requires Python 3.11+. If your default Python is older (e.g. Anaconda 3.8), create a compatible environment:
+```bash
+conda create -n sriti-env python=3.11 -y
+conda activate sriti-env
+pip install sriti-core
+```
+
+### `pip install -e ".[dev]"` fails with `setup.py not found`
+Your pip version is too old to support `pyproject.toml`-based editable installs. Upgrade pip first:
+```bash
+pip install --upgrade pip
+pip install -e ".[dev]"
+```
+
+### `Could not find a version that satisfies the requirement torch>=2.8.0`
+PyTorch 2.8+ requires macOS 13 (Ventura) or later and a recent pip. If you are on macOS 12 or older, you cannot install sriti-core from PyPI directly. Options:
+
+- **Upgrade macOS** to 13+ (recommended for full compatibility).
+- **Run on Linux** — all dependencies resolve cleanly on modern Ubuntu/Debian.
+- **Use Docker** — run the server in a container with a compatible base image:
+  ```bash
+  docker run --rm -it python:3.11-slim bash
+  pip install sriti-core
+  ```
+
+### macOS: wrong Python is used even after `conda activate`
+If `which python` still points to Anaconda's base Python, your shell may not have conda initialized. Run:
+```bash
+source /opt/anaconda3/etc/profile.d/conda.sh
+conda activate sriti-env
+which python   # should now show the sriti-env path
+```
 
 ---
 
