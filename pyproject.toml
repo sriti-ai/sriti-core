@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sriti-core"
-version = "0.1.0"
+version = "0.1.1"
 description = "Adaptive LLM cascade engine with semantic caching and reliability tracking"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
@@ -33,7 +34,7 @@ dependencies = [
     "litellm>=1.83.7,<1.88",
     "redis>=5.0.8,<6",
     "pyyaml>=6.0.2",
-    "numpy>=1.26.0,<2",
+    "numpy>=1.26.0",
     "fastembed>=0.3.0",
     "llmlingua>=0.2.0",
     "torch>=2.8.0",

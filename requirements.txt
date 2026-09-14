@@ -11,7 +11,7 @@ litellm>=1.83.7,<1.88
 redis>=5.0.8,<6
 
 pyyaml>=6.0.2
-numpy>=1.26.0,<2
+numpy>=1.26.0
 
 # Classifier embedding model (ONNX runtime, fast zero-shot inference)
 fastembed>=0.3.0
