@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sriti-core"
-version = "0.1.1"
+version = "0.1.2"
 description = "Adaptive LLM cascade engine with semantic caching and reliability tracking"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -55,3 +55,6 @@ Issues = "https://github.com/sriti-ai/sriti-core/issues"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["sriti*"]
+
+[tool.setuptools.package-data]
+sriti = ["config/*.yaml"]

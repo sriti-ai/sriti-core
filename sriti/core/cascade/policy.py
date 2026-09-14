@@ -39,11 +39,63 @@ class TierConfig:
 
 _POLICY_PATH = Path(__file__).parent.parent.parent / "config" / "policy.yaml"
 
+# Sane defaults that mirror policy.yaml — used when the file cannot be loaded
+# (e.g. a broken install). Packaging is the real fix; this is defence-in-depth.
+_POLICY_DEFAULTS: dict[str, Any] = {
+    "tiers": [
+        {"name": "tier1_frontier", "quality_threshold": None, "max_latency_ms": 30000},
+        {"name": "tier2_balanced", "quality_threshold": 0.55, "max_latency_ms": 15000},
+        {"name": "tier3_fast", "quality_threshold": 0.70, "max_latency_ms": 240000},
+    ],
+    "task_routing": {
+        "default_tier": 2,
+        "tier3_tasks": [
+            "customer_support", "rag_retrieval", "classification", "summarization",
+            "structured_extraction", "qa", "translation", "conversation",
+            "rewriting", "instruction_following",
+        ],
+        "tier2_tasks": [
+            "reasoning", "math", "code", "creative",
+            "data_analysis", "document_review", "tool_use",
+        ],
+    },
+    "quality_check": {"mode": "low"},
+    "budget": {"frontier_traffic_cap": 0.08, "max_cost_per_1k_requests": 0.50},
+    "reliability": {
+        "explore_rate": 0.1,
+        "min_samples": 5,
+        "case_memory": {
+            "enabled": True, "k": 4, "weight": 0.15,
+            "min_reward": 0.5, "max_cases_per_index": 100_000,
+        },
+        "aggregation": {
+            "enabled": True, "max_parallel_models": 2,
+            "synthesis_method": "best_pick", "eligible_tiers": [2, 3], "min_tier_models": 2,
+        },
+        "expert_bank": {
+            "enabled": True, "weight": 0.10,
+            "update_interval_s": 600, "blend_ratio": 0.7,
+        },
+    },
+    "latency_slo_enforcement": True,
+}
+
 
 def _load_policy() -> dict[str, Any]:
-    with open(_POLICY_PATH) as f:
-        data = yaml.safe_load(f)
-    return data["policy"]
+    try:
+        with open(_POLICY_PATH) as f:
+            data = yaml.safe_load(f)
+        return data["policy"]
+    except FileNotFoundError:
+        logger.warning(
+            "policy.yaml not found at %s — using built-in defaults. "
+            "This usually indicates a packaging issue (config files missing from the wheel).",
+            _POLICY_PATH,
+        )
+        return _POLICY_DEFAULTS
+    except Exception as exc:
+        logger.warning("Could not load policy.yaml (%s) — using built-in defaults", exc)
+        return _POLICY_DEFAULTS
 
 
 _policy: dict[str, Any] = _load_policy()

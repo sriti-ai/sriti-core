@@ -191,9 +191,12 @@ Sriti's configuration is managed through two clean YAML files in `sriti/config/`
 
 ## Testing
 
-Run unit and cascade integration tests using pytest:
+The test suite lives in the source repository and is not included in the published wheel. Clone the repo first, then run:
 
 ```bash
+git clone https://github.com/sriti-ai/sriti-core.git
+cd sriti-core
+pip install -e ".[dev]"
 python -m pytest
 ```
 
